@@ -32,7 +32,7 @@
         
         .day { background: white; aspect-ratio: 0.85; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #eee; position: relative; }
         .day-n { font-size: 13px; font-weight: bold; color: #333; }
-        .day-s { font-size: 11px; font-weight: 800; color: #aaa; margin-top: 2px; text-align: center; }
+        .day-s { font-size: 11px; font-weight: 800; color: #aaa; margin-top: 2px; text-align: center; line-height: 1.1; }
         .day-sub { position: absolute; left: 4px; top: 4px; font-size: 9px; color: #bbb; font-weight: bold; }
         
         .day.is-off { background: #e0e0e0; } 
@@ -68,8 +68,8 @@
 </div>
 
 <div class="dash">
-    <div class="card"><span class="val" id="vP">0.0</span><span style="font-size:10px">上月结余(h)</span></div>
-    <div class="card red"><span class="val" id="vT">0.0</span><span style="font-size:10px">当前总剩余(h)</span></div>
+    <div class="card"><span class="val" id="vP">0.00</span><span style="font-size:10px">上月结余(h)</span></div>
+    <div class="card red"><span class="val" id="vT">0.00</span><span style="font-size:10px">当前总剩余(h)</span></div>
 </div>
 
 <div class="summary-bar">
@@ -88,14 +88,14 @@
     <div class="form-g"><label style="font-size:11px;color:#999">班次</label><select id="mS"><option value="F">F班</option><option value="A">A班</option><option value="C">C班</option><option value="OFF">休息 / OFF</option></select></div>
     <div class="form-g"><label style="font-size:11px;color:#999">加班 (+h)</label><input type="number" id="mA" step="0.1"></div>
     <div class="form-g"><label style="font-size:11px;color:#999">调休 (-h)</label><input type="number" id="mO" step="0.1"></div>
-    <div class="form-g"><label style="font-size:11px;color:#999">备注 (填“调班、迟到等”会变色)</label><input type="text" id="mR" maxlength="10"></div>
+    <div class="form-g"><label style="font-size:11px;color:#999">备注 (填“调班”会显紫)</label><input type="text" id="mR" maxlength="10"></div>
     <button class="btn-save" onclick="doS()">保存</button>
 </div>
 
 <script>
     const V = 'v13';
-    let db = JSON.parse(localStorage.getItem('wx_db_'+V)) || JSON.parse(localStorage.getItem('wx_db_v12')) || {};
-    let cfg = JSON.parse(localStorage.getItem('wx_cfg_'+V)) || JSON.parse(localStorage.getItem('wx_cfg_v12')) || { baseH: 0 };
+    let db = JSON.parse(localStorage.getItem('wx_db_'+V)) || {};
+    let cfg = JSON.parse(localStorage.getItem('wx_cfg_'+V)) || { baseH: 0 };
     let cY = new Date().getFullYear(), cM = new Date().getMonth();
     let curK = '';
 
@@ -113,22 +113,36 @@
         const g = document.getElementById('grid'); g.innerHTML = '';
         ['日','一','二','三','四','五','六'].forEach(w=>g.innerHTML+=`<div class="weekday">${w}</div>`);
 
-        let hist = cfg.baseH;
-        Object.keys(db).sort().forEach(k => {
-            const [y, m] = k.split('-').map(Number);
-            if(y < cY || (y === cY && m < cM + 1)) hist += (db[k].a - db[k].o);
-        });
-        document.getElementById('vP').innerText = hist.toFixed(2);
+        let runningTotal = cfg.baseH;
+        let histTotal = cfg.baseH;
 
-        let mA = 0, mO = 0, nW = 0, nOff = 0, nN = 0;
+        // 重新计算所有月份逻辑
+        const sortedKeys = Object.keys(db).sort();
+        
+        // 1. 先算到当前月之前的结余
+        sortedKeys.forEach(k => {
+            const [y, m] = k.split('-').map(Number);
+            if(y < cY || (y === cY && m < cM + 1)) {
+                histTotal += (db[k].a - db[k].o);
+            }
+        });
+        document.getElementById('vP').innerText = histTotal.toFixed(2);
+
+        // 2. 渲染当前月，并继续累加 runningTotal 得到最终剩余
+        runningTotal = histTotal;
         const days = new Date(cY, cM+1, 0).getDate();
         const first = new Date(cY, cM, 1).getDay();
+        let mA_m = 0, mO_m = 0, nW = 0, nOff = 0, nN = 0;
+
         for(let i=0; i<first; i++) g.innerHTML += '<div></div>';
 
         for(let d=1; d<=days; d++) {
             const k = `${cY}-${String(cM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const data = db[k] || {s:'F', a:0, o:0, r:''};
-            mA += data.a; mO += data.o;
+            
+            // 只有当月录入的数据才在这里参与计算最终余额
+            runningTotal += (data.a - data.o);
+
             if(data.s === 'OFF') nOff++; else nW++;
             if(data.r && data.r.trim() !== '') nN++;
 
@@ -140,8 +154,19 @@
 
             g.innerHTML += `<div class="${cls}" onclick="openM('${k}')"><span class="day-sub">${sub}</span><span class="day-n">${d}</span><span class="day-s">${txt}</span></div>`;
         }
-        document.getElementById('vT').innerText = (hist + mA - mO).toFixed(2);
-        document.getElementById('cntW').innerText = nW; document.getElementById('cntO').innerText = nOff; document.getElementById('cntN').innerText = nN;
+        
+        // 3. 计算其他未来月份（如果有录入的话）也要计入总剩余
+        sortedKeys.forEach(k => {
+            const [y, m] = k.split('-').map(Number);
+            if(y > cY || (y === cY && m > cM + 1)) {
+                runningTotal += (db[k].a - db[k].o);
+            }
+        });
+
+        document.getElementById('vT').innerText = runningTotal.toFixed(2);
+        document.getElementById('cntW').innerText = nW; 
+        document.getElementById('cntO').innerText = nOff; 
+        document.getElementById('cntN').innerText = nN;
     }
 
     function exportReport() {
@@ -151,15 +176,30 @@
 
     function openM(k) {
         curK = k; const d = db[k] || {s:'F', a:0, o:0, r:''};
-        document.getElementById('mDt').innerText = k; document.getElementById('mS').value = d.s; document.getElementById('mA').value = d.a || ''; document.getElementById('mO').value = d.o || ''; document.getElementById('mR').value = d.r || '';
-        document.getElementById('modal').style.display = 'block'; document.getElementById('ovl').style.display = 'block';
+        document.getElementById('mDt').innerText = k; 
+        document.getElementById('mS').value = d.s; 
+        document.getElementById('mA').value = d.a || ''; 
+        document.getElementById('mO').value = d.o || ''; 
+        document.getElementById('mR').value = d.r || '';
+        document.getElementById('modal').style.display = 'block'; 
+        document.getElementById('ovl').style.display = 'block';
     }
+
     function doS() {
-        let o = parseFloat(document.getElementById('mO').value) || 0;
-        db[curK] = {s: document.getElementById('mS').value, a: parseFloat(document.getElementById('mA').value)||0, o: (o > 0 && o < 3.25 ? 0 : o), r: document.getElementById('mR').value};
+        let oVal = parseFloat(document.getElementById('mO').value) || 0;
+        let finalO = (oVal > 0 && oVal < 3.25) ? 0 : oVal; // 逻辑保护
+        
+        db[curK] = {
+            s: document.getElementById('mS').value, 
+            a: parseFloat(document.getElementById('mA').value) || 0, 
+            o: finalO, 
+            r: document.getElementById('mR').value
+        };
         localStorage.setItem('wx_db_'+V, JSON.stringify(db));
-        closeM(); render();
+        closeM(); 
+        render(); 
     }
+
     function closeM() { document.getElementById('modal').style.display='none'; document.getElementById('ovl').style.display='none'; }
     function chM(n) { cM += n; if(cM<0){cM=11;cY--;} else if(cM>11){cM=0;cY++;} render(); }
     render();
