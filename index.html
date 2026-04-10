@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>威学考勤 Pro v13.4</title>
+    <title>威学考勤 Pro v16.6</title>
 
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,7 +15,7 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('sw.js')
-            .then(reg => console.log('PWA Ready'))
+            .then(reg => console.log('PWA v16.6 Ready'))
             .catch(err => console.log('PWA Error', err));
         });
       }
@@ -62,7 +62,7 @@
 </head>
 <body>
 
-<div class="header"><span class="title">🛸 威学考勤 Pro v13.4</span></div>
+<div class="header"><span class="title">🛸 威学考勤 Pro v16.6</span></div>
 
 <div class="tool-bar">
     <div class="conv-row"><input type="number" id="inD" placeholder="天"><span>天 =</span><input type="number" id="inH" placeholder="小时"></div>
@@ -95,7 +95,7 @@
 </div>
 
 <script>
-    const V = 'v13';
+    const V = 'v16'; // 升级数据库标识，保持数据独立性
     let db = JSON.parse(localStorage.getItem('wx_db_'+V)) || {};
     let cfg = JSON.parse(localStorage.getItem('wx_cfg_'+V)) || { baseH: 0 };
     let cY = new Date().getFullYear(), cM = new Date().getMonth();
@@ -173,7 +173,7 @@
     function exportReport() {
         const h = document.getElementById('vT').innerText;
         const c = Math.floor(parseFloat(h) / 3.25);
-        const r = `【威学考勤简报】\n📅 时间：${document.getElementById('mLab').innerText}\n🚀 结余：${h}h\n🎫 调休：${c}次\n✨ 外星人出品`;
+        const r = `【威学考勤 v16.6 简报】\n📅 时间：${document.getElementById('mLab').innerText}\n🚀 总剩余时长：${h}h\n🎫 可调休：${c}次\n✨ 数据本地安全存储`;
         alert(r);
     }
 
