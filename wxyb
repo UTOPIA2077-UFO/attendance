@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>威学一百小牛马 - 考勤 Pro</title>
+    <style>
+        :root { --red: #D32F2F; --black: #1A1A1A; --white: #FFFFFF; --light-gray: #f8f9fa; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--light-gray); color: var(--black); margin: 0; padding: 0; padding-bottom: 50px; }
+        .header-card { background: var(--black); color: white; padding: 25px 20px; text-align: center; border-radius: 0 0 20px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .editable-name { border-bottom: 2px solid var(--red); font-size: 22px; font-weight: 800; cursor: pointer; }
+        
+        /* 优化后的转换器 */
+        .tool-bar { background: #fff; margin: -10px 15px 15px; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .conv-title { font-size: 12px; font-weight: bold; margin-bottom: 10px; display: block; color: #666; }
+        .conv-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .input-box { flex: 1; text-align: center; }
+        .input-box input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; text-align: center; font-size: 14px; }
+        .apply-btn { width: 100%; background: var(--black); color: white; border: none; padding: 8px; border-radius: 6px; font-size: 12px; margin-top: 10px; font-weight: bold; }
+
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 15px; margin-bottom: 15px; }
+        .stat-card { background: white; padding: 12px; border-radius: 12px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .stat-card.active { background: var(--red); color: white; }
+        .stat-card .val { font-size: 18px; font-weight: 900; color: var(--red); display: block; }
+        .stat-card.active .val { color: white; }
+        .stat-card .lab { font-size: 10px; opacity: 0.7; margin-top: 4px; }
+
+        .nav-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; }
+        .calendar-container { padding: 0 10px; }
+        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .weekday { text-align: center; font-size: 11px; color: #999; padding-bottom: 8px; }
+        .day-box { background: white; aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #eee; }
+        .day-num { font-size: 15px; font-weight: bold; }
+        .day-info { font-size: 8px; margin-top: 2px; color: #888; }
+        .day-box.has-off { border: 2px solid var(--red); color: var(--red); }
+        .day-box.has-add { background: #fff5f5; }
+        
+        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 300px; background: white; padding: 20px; border-radius: 15px; z-index: 101; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; }
+        .save-btn { width: 100%; padding: 12px; background: var(--red); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="header-card">
+    <span class="editable-name" onclick="rename()">威学一百小牛马</span>
+    <span style="display:block; font-size:9px; color:var(--red); margin-top:5px; letter-spacing:2px;">AUTOMATIC TRACKING SYSTEM</span>
+</div>
+
+<div class="tool-bar">
+    <span class="conv-title">⚙️ 初始结余设定 (支持天/小时)</span>
+    <div class="conv-row">
+        <div class="input-box">
+            <input type="number" id="inDay" placeholder="天数" oninput="syncFromDay()">
+            <div style="font-size:10px; margin-top:4px;">天 (7.75h/天)</div>
+        </div>
+        <div style="font-weight:bold;">=</div>
+        <div class="input-box">
+            <input type="number" id="inHour" placeholder="小时" oninput="syncFromHour()">
+            <div style="font-size:10px; margin-top:4px;">总小时数</div>
+        </div>
+    </div>
+    <button class="apply-btn" onclick="saveInit()">保存并应用为历史起算点</button>
+</div>
+
+<div class="dashboard">
+    <div class="stat-card"><span class="val" id="vPrev">0.0</span><span class="lab">上月结余(h)</span></div>
+    <div class="stat-card active"><span class="val" id="vTotal">0.0</span><span class="lab">当前总剩余(h)</span></div>
+    <div class="stat-card"><span class="val" id="vAdd">0.0</span><span class="lab">本月加班(+)</span></div>
+    <div class="stat-card"><span class="val" id="vOff">0.0</span><span class="lab">本月调休(-)</span></div>
+</div>
+
+<div class="nav-bar">
+    <button onclick="moveM(-1)">◀</button>
+    <b id="mLabel">2026-04</b>
+    <button onclick="moveM(1)">▶</button>
+</div>
+
+<div class="calendar-container"><div class="grid" id="grid"></div></div>
+
+<div class="overlay" id="overlay" onclick="closeM()"></div>
+<div id="modal">
+    <div id="mDate" style="font-weight:bold; color:var(--red); margin-bottom:15px;"></div>
+    <input type="text" id="mS" placeholder="班次(如F/休调F)">
+    <input type="number" id="mA" step="0.1" placeholder="加班时长(h)">
+    <input type="number" id="mO" step="0.1" placeholder="调休时长(h)">
+    <button class="save-btn" onclick="doSave()">确认</button>
+</div>
+
+<script>
+    let db = JSON.parse(localStorage.getItem('wx_db_v4')) || {};
+    let cfg = JSON.parse(localStorage.getItem('wx_cfg_v4')) || { name:'威学一百小牛马', baseH:0 };
+    let cY = new Date().getFullYear(), cM = new Date().getMonth();
+    let curK = '';
+
+    function syncFromDay() {
+        const d = document.getElementById('inDay').value;
+        document.getElementById('inHour').value = (d * 7.75).toFixed(2);
+    }
+    function syncFromHour() {
+        const h = document.getElementById('inHour').value;
+        document.getElementById('inDay').value = (h / 7.75).toFixed(2);
+    }
+    function saveInit() {
+        cfg.baseH = parseFloat(document.getElementById('inHour').value) || 0;
+        localStorage.setItem('wx_cfg_v4', JSON.stringify(cfg));
+        render(); alert('初始值已设定，系统将以此为起点自动结转！');
+    }
+
+    function render() {
+        document.getElementById('mLabel').innerText = `${cY}-${String(cM+1).padStart(2,'0')}`;
+        const grid = document.getElementById('grid'); grid.innerHTML = '';
+        ['日','一','二','三','四','五','六'].forEach(w=>grid.innerHTML+=`<div class="weekday">${w}</div>`);
+
+        // 核心：自动计算历史结余
+        let historySum = cfg.baseH;
+        for(let k in db) {
+            const [y, m] = k.split('-').map(Number);
+            if(y < cY || (y === cY && m < cM + 1)) historySum += (db[k].a - db[k].o);
+        }
+        document.getElementById('vPrev').innerText = historySum.toFixed(2);
+
+        let mAdd = 0, mOff = 0;
+        const first = new Date(cY, cM, 1).getDay();
+        const days = new Date(cY, cM+1, 0).getDate();
+        for(let i=0; i<first; i++) grid.innerHTML += '<div></div>';
+
+        for(let d=1; d<=days; d++) {
+            const k = `${cY}-${String(cM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const data = db[k] || {s:'F', a:0, o:0};
+            mAdd += data.a; mOff += data.o;
+            let cls = 'day-box';
+            if(data.o>0) cls += ' has-off'; else if(data.a>0) cls += ' has-add';
+            grid.innerHTML += `<div class="${cls}" onclick="openM('${k}')"><span class="day-num">${d}</span><span class="day-info">${data.o>0?'-'+data.o:(data.a>0?'+'+data.a:data.s)}</span></div>`;
+        }
+        document.getElementById('vAdd').innerText = mAdd.toFixed(2);
+        document.getElementById('vOff').innerText = mOff.toFixed(2);
+        document.getElementById('vTotal').innerText = (historySum + mAdd - mOff).toFixed(2);
+    }
+
+    function openM(k) {
+        curK = k; const data = db[k] || {s:'F', a:0, o:0};
+        document.getElementById('mDate').innerText = k;
+        document.getElementById('mS').value = data.s;
+        document.getElementById('mA').value = data.a || '';
+        document.getElementById('mO').value = data.o || '';
+        document.getElementById('modal').style.display = 'block';
+        document.getElementById('overlay').style.display = 'block';
+    }
+    function doSave() {
+        const s = document.getElementById('mS').value;
+        const a = parseFloat(document.getElementById('mA').value) || 0;
+        let o = parseFloat(document.getElementById('mO').value) || 0;
+        if(o > 0 && o < 3.25) o = 0;
+        db[curK] = {s, a, o};
+        localStorage.setItem('wx_db_v4', JSON.stringify(db));
+        closeM(); render();
+    }
+    function closeM() { document.getElementById('modal').style.display='none'; document.getElementById('overlay').style.display='none'; }
+    function moveM(n) { cM += n; if(cM<0){cM=11;cY--;} else if(cM>11){cM=0;cY++;} render(); }
+    function rename() { const n = prompt("名字", cfg.name); if(n){cfg.name=n; document.querySelector('.editable-name').innerText=n; localStorage.setItem('wx_cfg_v4',JSON.stringify(cfg));}}
+    
+    document.querySelector('.editable-name').innerText = cfg.name;
+    render();
+</script>
+</body>
+</html>
