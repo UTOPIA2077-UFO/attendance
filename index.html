@@ -10,7 +10,6 @@
         .header-card { background: var(--black); color: white; padding: 25px 20px; text-align: center; border-radius: 0 0 20px 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .editable-name { border-bottom: 2px solid var(--red); font-size: 22px; font-weight: 800; cursor: pointer; }
         
-        /* 优化后的转换器 */
         .tool-bar { background: #fff; margin: -10px 15px 15px; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .conv-title { font-size: 12px; font-weight: bold; margin-bottom: 10px; display: block; color: #666; }
         .conv-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -32,12 +31,27 @@
         .day-box { background: white; aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #eee; }
         .day-num { font-size: 15px; font-weight: bold; }
         .day-info { font-size: 8px; margin-top: 2px; color: #888; }
+        
+        /* 状态样式 */
         .day-box.has-off { border: 2px solid var(--red); color: var(--red); }
+        .day-box.has-off .day-num { color: var(--red); }
         .day-box.has-add { background: #fff5f5; }
+        .day-box.mod-shift { background: var(--black); color: white; border-color: var(--black); }
+        .day-box.mod-shift .day-info { color: #aaa; }
         
         #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 300px; background: white; padding: 20px; border-radius: 15px; z-index: 101; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; }
-        .save-btn { width: 100%; padding: 12px; background: var(--red); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; backdrop-filter: blur(2px); }
+        
+        /* 弹窗内的输入与选择样式 */
+        .modal-g { margin-bottom: 12px; }
+        .modal-g label { font-size: 10px; font-weight: bold; color: #999; display: block; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #eee; border-radius: 8px; font-size: 14px; background: #fdfdfd; box-sizing: border-box; }
+        
+        /* 特别优化：加班和调休框背景，区分功能 */
+        input#mA { background: #fffcf0; } /* 加班区域浅黄 */
+        input#mO { background: #fff5f5; } /* 调休区域浅红 */
+
+        .save-btn { width: 100%; padding: 12px; background: var(--red); color: white; border: none; border-radius: 8px; font-weight: bold; margin-top: 10px; font-size: 15px; }
     </style>
 </head>
 <body>
@@ -66,13 +80,12 @@
 <div class="dashboard">
     <div class="stat-card"><span class="val" id="vPrev">0.0</span><span class="lab">上月结余(h)</span></div>
     <div class="stat-card active"><span class="val" id="vTotal">0.0</span><span class="lab">当前总剩余(h)</span></div>
-    <div class="stat-card"><span class="val" id="vAdd">0.0</span><span class="lab">本月加班(+)</span></div>
-    <div class="stat-card"><span class="val" id="vOff">0.0</span><span class="lab">本月调休(-)</span></div>
+    <div class="stat-box" style="display:none;"><span id="vAdd">0.0</span><span id="vOff">0.0</span></div>
 </div>
 
 <div class="nav-bar">
     <button onclick="moveM(-1)">◀</button>
-    <b id="mLabel">2026-04</b>
+    <b id="mLabel" style="font-size:18px;">2026-04</b>
     <button onclick="moveM(1)">▶</button>
 </div>
 
@@ -80,31 +93,49 @@
 
 <div class="overlay" id="overlay" onclick="closeM()"></div>
 <div id="modal">
-    <div id="mDate" style="font-weight:bold; color:var(--red); margin-bottom:15px;"></div>
-    <input type="text" id="mS" placeholder="班次(如F/休调F)">
-    <input type="number" id="mA" step="0.1" placeholder="加班时长(h)">
-    <input type="number" id="mO" step="0.1" placeholder="调休时长(h)">
-    <button class="save-btn" onclick="doSave()">确认</button>
+    <div id="mDate" style="font-weight:bold; color:var(--red); margin-bottom:15px; font-size:16px; border-bottom:1px solid #eee; padding-bottom:5px;"></div>
+    
+    <div class="modal-g">
+        <label>当日班次</label>
+        <select id="mS">
+            <option value="F">F班 (10:30-20:30)</option>
+            <option value="A">A班 (09:00-18:00)</option>
+            <option value="C">C班 (13:30-22:30)</option>
+            <option value="OFF">休息 / OFF</option>
+            <option value="OTHER">其他/自定义</option>
+        </select>
+    </div>
+
+    <div class="modal-g" style="background:#fffcf0; padding:10px; border-radius:8px; margin-bottom:8px;">
+        <label style="color:var(--black)">+ 录入加班时长 (h)</label>
+        <input type="number" id="mA" step="0.1" placeholder="0">
+    </div>
+
+    <div class="modal-g" style="background:#fff5f5; padding:10px; border-radius:8px;">
+        <label style="color:var(--red)">- 录入调休时长 (h) (3.25起)</label>
+        <input type="number" id="mO" step="0.1" placeholder="0">
+    </div>
+
+    <div class="modal-g">
+        <label>状态备注 (如 迟到, 漏卡, F调F)</label>
+        <input type="text" id="mR" placeholder="可不填">
+    </div>
+
+    <button class="save-btn" onclick="doSave()">确认保存</button>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('wx_db_v4')) || {};
-    let cfg = JSON.parse(localStorage.getItem('wx_cfg_v4')) || { name:'威学一百小牛马', baseH:0 };
+    let db = JSON.parse(localStorage.getItem('wx_db_v5')) || {};
+    let cfg = JSON.parse(localStorage.getItem('wx_cfg_v5')) || { name:'威学一百小牛马', baseH:0 };
     let cY = new Date().getFullYear(), cM = new Date().getMonth();
     let curK = '';
 
-    function syncFromDay() {
-        const d = document.getElementById('inDay').value;
-        document.getElementById('inHour').value = (d * 7.75).toFixed(2);
-    }
-    function syncFromHour() {
-        const h = document.getElementById('inHour').value;
-        document.getElementById('inDay').value = (h / 7.75).toFixed(2);
-    }
+    function syncFromDay() { const d = document.getElementById('inDay').value; document.getElementById('inHour').value = (d * 7.75).toFixed(2); }
+    function syncFromHour() { const h = document.getElementById('inHour').value; document.getElementById('inDay').value = (h / 7.75).toFixed(2); }
     function saveInit() {
         cfg.baseH = parseFloat(document.getElementById('inHour').value) || 0;
-        localStorage.setItem('wx_cfg_v4', JSON.stringify(cfg));
-        render(); alert('初始值已设定，系统将以此为起点自动结转！');
+        localStorage.setItem('wx_cfg_v5', JSON.stringify(cfg));
+        render(); alert('初始值已设定！');
     }
 
     function render() {
@@ -112,7 +143,6 @@
         const grid = document.getElementById('grid'); grid.innerHTML = '';
         ['日','一','二','三','四','五','六'].forEach(w=>grid.innerHTML+=`<div class="weekday">${w}</div>`);
 
-        // 核心：自动计算历史结余
         let historySum = cfg.baseH;
         for(let k in db) {
             const [y, m] = k.split('-').map(Number);
@@ -127,11 +157,22 @@
 
         for(let d=1; d<=days; d++) {
             const k = `${cY}-${String(cM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const data = db[k] || {s:'F', a:0, o:0};
+            const data = db[k] || {s:'F', a:0, o:0, r:''};
             mAdd += data.a; mOff += data.o;
             let cls = 'day-box';
-            if(data.o>0) cls += ' has-off'; else if(data.a>0) cls += ' has-add';
-            grid.innerHTML += `<div class="${cls}" onclick="openM('${k}')"><span class="day-num">${d}</span><span class="day-info">${data.o>0?'-'+data.o:(data.a>0?'+'+data.a:data.s)}</span></div>`;
+            let info = '';
+
+            // 样式与显示逻辑
+            if(data.o>0) { cls += ' has-off'; info = '-'+data.o; } 
+            else if(data.a>0) { cls += ' has-add'; info = '+'+data.a; } 
+            else { info = data.s || 'F'; }
+
+            // 如果有班次或状态备注，显示在下方
+            let remarkTip = '';
+            if(data.r) { remarkTip = `<span class="day-info" style="color:var(--red); font-size:8px;">${data.r}</span>`; }
+            else if((data.s === 'A' || data.s === 'C' || data.s === 'OFF')) { cls += ' mod-shift'; remarkTip = `<span class="day-info">${data.s}</span>`; }
+
+            grid.innerHTML += `<div class="${cls}" onclick="openM('${k}')"><span class="day-num">${d}</span>${remarkTip}</div>`;
         }
         document.getElementById('vAdd').innerText = mAdd.toFixed(2);
         document.getElementById('vOff').innerText = mOff.toFixed(2);
@@ -139,11 +180,12 @@
     }
 
     function openM(k) {
-        curK = k; const data = db[k] || {s:'F', a:0, o:0};
+        curK = k; const data = db[k] || {s:'F', a:0, o:0, r:''};
         document.getElementById('mDate').innerText = k;
-        document.getElementById('mS').value = data.s;
+        document.getElementById('mS').value = data.s || 'F';
         document.getElementById('mA').value = data.a || '';
         document.getElementById('mO').value = data.o || '';
+        document.getElementById('mR').value = data.r || '';
         document.getElementById('modal').style.display = 'block';
         document.getElementById('overlay').style.display = 'block';
     }
@@ -151,14 +193,16 @@
         const s = document.getElementById('mS').value;
         const a = parseFloat(document.getElementById('mA').value) || 0;
         let o = parseFloat(document.getElementById('mO').value) || 0;
+        const r = document.getElementById('mR').value;
+
         if(o > 0 && o < 3.25) o = 0;
-        db[curK] = {s, a, o};
-        localStorage.setItem('wx_db_v4', JSON.stringify(db));
+        db[curK] = {s, a, o, r};
+        localStorage.setItem('wx_db_v5', JSON.stringify(db));
         closeM(); render();
     }
     function closeM() { document.getElementById('modal').style.display='none'; document.getElementById('overlay').style.display='none'; }
     function moveM(n) { cM += n; if(cM<0){cM=11;cY--;} else if(cM>11){cM=0;cY++;} render(); }
-    function rename() { const n = prompt("名字", cfg.name); if(n){cfg.name=n; document.querySelector('.editable-name').innerText=n; localStorage.setItem('wx_cfg_v4',JSON.stringify(cfg));}}
+    function rename() { const n = prompt("名字", cfg.name); if(n){cfg.name=n; document.querySelector('.editable-name').innerText=n; localStorage.setItem('wx_cfg_v5',JSON.stringify(cfg));}}
     
     document.querySelector('.editable-name').innerText = cfg.name;
     render();
