@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>威学考勤 Pro v10</title>
+    <title>威学考勤 Pro v11</title>
     <style>
-        :root { --red: #D32F2F; --black: #1A1A1A; --gray: #f8f9fa; --gold: #b58900; }
+        :root { --red: #D32F2F; --black: #1A1A1A; --gray: #f8f9fa; --gold: #b58900; --purple: #7B1FA2; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, sans-serif; background: var(--gray); margin: 0; padding-bottom: 50px; }
         .header { background: var(--black); color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; }
@@ -28,23 +28,22 @@
         .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; padding: 0 10px; }
         .weekday { text-align: center; font-size: 12px; color: #999; }
         
-        /* 核心逻辑优化 */
         .day { background: white; aspect-ratio: 0.85; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #eee; position: relative; }
         .day-n { font-size: 13px; font-weight: bold; color: #333; }
         .day-s { font-size: 11px; font-weight: 800; color: #aaa; margin-top: 2px; }
         
-        /* 状态显示 */
-        .day.is-off { background: #e0e0e0; } /* 只有休息显示灰色 */
-        .day.is-off .day-s { color: #777; }
-        
-        .day.has-a { background: #fffcf0; border: 1px solid #f9eeb0; } /* 加班：淡黄底 */
+        /* 状态样式逻辑升级 */
+        .day.is-off { background: #e0e0e0; } 
+        .day.has-a { background: #fffcf0; border: 1px solid #f9eeb0; } /* 加班：黄 */
         .day.has-a .day-s { color: var(--gold); }
         
-        .day.has-o { background: #fff8f8; border: 1.5px solid var(--red); } /* 调休：红框 */
+        .day.has-o { background: #fff8f8; border: 1.5px solid var(--red); } /* 调休：红 */
         .day.has-o .day-s { color: var(--red); }
 
-        .day.has-note { border-bottom: 3px solid var(--red); } /* 备注：底红线 */
-        .day.has-note .day-s { color: var(--red) !important; font-weight: 900; }
+        /* 调班/备注：紫色高亮 (v11核心修改) */
+        .day.has-note { background: #f3e5f5; border: 1px solid #ce93d8; } 
+        .day.has-note .day-s { color: var(--purple) !important; font-weight: 900; }
+        .day.has-note .day-n { color: var(--purple); }
 
         #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 320px; background: white; padding: 20px; border-radius: 20px; z-index: 101; }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; backdrop-filter: blur(3px); }
@@ -55,7 +54,7 @@
 </head>
 <body>
 
-<div class="header"><span class="title">威学考勤 Pro v10</span></div>
+<div class="header"><span class="title">威学考勤 Pro v11</span></div>
 
 <div class="tool-bar">
     <div class="conv-row">
@@ -75,7 +74,7 @@
 <div class="summary-bar">
     <div class="summary-item">出勤 <b id="cntW">0</b>天</div>
     <div class="summary-item">休息 <b id="cntO">0</b>天</div>
-    <div class="summary-item">备注 <b id="cntN">0</b>天</div>
+    <div class="summary-item">备注/调班 <b id="cntN">0</b>天</div>
 </div>
 
 <div class="nav"><button onclick="chM(-1)">◀</button><b id="mLab">2026-04</b><button onclick="chM(1)">▶</button></div>
@@ -87,21 +86,21 @@
     <div class="form-g"><label style="font-size:11px;color:#999">班次</label><select id="mS"><option value="F">F班</option><option value="A">A班</option><option value="C">C班</option><option value="OFF">休息 / OFF</option></select></div>
     <div class="form-g"><label style="font-size:11px;color:#999">加班 (+h)</label><input type="number" id="mA" step="0.1"></div>
     <div class="form-g"><label style="font-size:11px;color:#999">调休 (-h)</label><input type="number" id="mO" step="0.1"></div>
-    <div class="form-g"><label style="font-size:11px;color:#999">备注 (显示前2字)</label><input type="text" id="mR" maxlength="10"></div>
+    <div class="form-g"><label style="font-size:11px;color:#999">备注 (填“调班”将变紫)</label><input type="text" id="mR" maxlength="10"></div>
     <button class="btn-save" onclick="doS()">保存</button>
 </div>
 
 <script>
-    const V = 'v10';
-    let db = JSON.parse(localStorage.getItem('wx_db_'+V)) || JSON.parse(localStorage.getItem('wx_db_v9')) || {};
-    let cfg = JSON.parse(localStorage.getItem('wx_cfg_'+V)) || JSON.parse(localStorage.getItem('wx_cfg_v9')) || { baseH: 0 };
+    const V = 'v11';
+    let db = JSON.parse(localStorage.getItem('wx_db_'+V)) || JSON.parse(localStorage.getItem('wx_db_v10')) || {};
+    let cfg = JSON.parse(localStorage.getItem('wx_cfg_'+V)) || JSON.parse(localStorage.getItem('wx_cfg_v10')) || { baseH: 0 };
     let cY = new Date().getFullYear(), cM = new Date().getMonth();
     let curK = '';
 
     document.getElementById('inD').oninput = () => document.getElementById('inH').value = (document.getElementById('inD').value * 7.75).toFixed(2);
     document.getElementById('inH').oninput = () => document.getElementById('inD').value = (document.getElementById('inH').value / 7.75).toFixed(2);
     
-    function saveI() { cfg.baseH = parseFloat(document.getElementById('inH').value) || 0; localStorage.setItem('wx_cfg_'+V, JSON.stringify(cfg)); render(); alert('历史数据已应用！'); }
+    function saveI() { cfg.baseH = parseFloat(document.getElementById('inH').value) || 0; localStorage.setItem('wx_cfg_'+V, JSON.stringify(cfg)); render(); alert('历史数据已同步！'); }
 
     function render() {
         document.getElementById('mLab').innerText = `${cY}-${String(cM+1).padStart(2,'0')}`;
@@ -116,8 +115,8 @@
         document.getElementById('vP').innerText = hist.toFixed(2);
 
         let mA = 0, mO = 0, nW = 0, nOff = 0, nN = 0;
-        const first = new Date(cY, cM, 1).getDay();
         const days = new Date(cY, cM+1, 0).getDate();
+        const first = new Date(cY, cM, 1).getDay();
         for(let i=0; i<first; i++) g.innerHTML += '<div></div>';
 
         for(let d=1; d<=days; d++) {
@@ -130,11 +129,14 @@
 
             let cls = 'day', txt = data.s === 'OFF' ? '休' : data.s;
             
-            // 样式判断：只有实际有变动才显色
             if(data.s === 'OFF') cls += ' is-off';
             if(data.a > 0) { cls += ' has-a'; txt = '+' + data.a; }
             if(data.o > 0) { cls += ' has-o'; txt = '-' + data.o; }
-            if(data.r && data.r.trim() !== '') { cls += ' has-note'; txt = data.r.substring(0, 2); }
+            // 备注/调班优先级最高，变紫色
+            if(data.r && data.r.trim() !== '') { 
+                cls += ' has-note'; 
+                txt = data.r.substring(0, 2); 
+            }
 
             g.innerHTML += `<div class="${cls}" onclick="openM('${k}')"><span class="day-n">${d}</span><span class="day-s">${txt}</span></div>`;
         }
