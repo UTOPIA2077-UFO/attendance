@@ -3,44 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>威学考勤 Pro v13.1</title>
+    <title>威学考勤 Pro v13.3</title>
     <style>
         :root { --red: #D32F2F; --black: #1A1A1A; --gray: #f8f9fa; --gold: #b58900; --purple: #7B1FA2; --export: #6200EE; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, sans-serif; background: var(--gray); margin: 0; padding-bottom: 50px; }
         
-        /* 头部与 UFO */
-        .header { background: var(--black); color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; position: relative; overflow: hidden; }
-        .ufo-icon { position: absolute; left: 15px; top: 15px; width: 45px; height: 45px; transform: rotate(-10deg); filter: drop-shadow(0 0 5px rgba(255,255,255,0.3)); z-index: 1; }
-        .title { border-bottom: 2px solid var(--red); font-size: 20px; font-weight: bold; position: relative; z-index: 2; }
+        .header { background: var(--black); color: white; padding: 25px 20px; text-align: center; border-radius: 0 0 20px 20px; }
+        .title { border-bottom: 2px solid var(--red); font-size: 20px; font-weight: bold; padding-bottom: 5px; }
         
-        /* 顶部工具栏 */
         .tool-bar { background: #fff; margin: 10px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .conv-row { display: flex; align-items: center; gap: 8px; }
         .conv-row input { flex: 1; width: 50px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; text-align: center; }
         .apply-btn { width: 100%; background: var(--black); color: white; border: none; padding: 10px; border-radius: 8px; margin-top: 10px; font-weight: bold; }
         
-        /* 数据卡片 */
         .dash { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 10px; margin-top: 10px; }
         .card { background: white; padding: 12px; border-radius: 12px; text-align: center; }
         .card.red { background: var(--red); color: white; }
         .val { font-size: 18px; font-weight: 900; display: block; }
         
-        /* 统计与导出 */
         .summary-bar { background: #eee; margin: 15px 10px 5px; padding: 10px; border-radius: 10px; display: flex; justify-content: space-around; font-size: 11px; color: #666; }
         .summary-item b { color: var(--black); font-size: 14px; margin-right: 2px; }
         .export-btn { width: calc(100% - 20px); background: var(--export); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; margin: 5px 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 
-        /* 日历核心 */
         .nav { display: flex; justify-content: space-between; padding: 10px 20px; align-items: center; }
         .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; padding: 0 10px; }
         .weekday { text-align: center; font-size: 12px; color: #999; }
+        
         .day { background: white; aspect-ratio: 0.85; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #eee; position: relative; }
         .day-n { font-size: 13px; font-weight: bold; color: #333; }
         .day-s { font-size: 11px; font-weight: 800; color: #aaa; margin-top: 2px; text-align: center; }
         .day-sub { position: absolute; left: 4px; top: 4px; font-size: 9px; color: #bbb; font-weight: bold; }
         
-        /* 日历状态 */
         .day.is-off { background: #e0e0e0; } 
         .day.has-a { background: #fffcf0; border: 1px solid #f9eeb0; }
         .day.has-a .day-s { color: var(--gold); }
@@ -50,7 +44,6 @@
         .day.has-note .day-s { color: var(--purple) !important; font-weight: 900; }
         .day.has-note .day-sub { color: var(--purple); opacity: 0.6; }
 
-        /* 弹窗 */
         #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 320px; background: white; padding: 20px; border-radius: 20px; z-index: 101; }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; backdrop-filter: blur(3px); }
         .form-g { margin-bottom: 12px; }
@@ -61,8 +54,7 @@
 <body>
 
 <div class="header">
-    < img src="https://raw.githubusercontent.com/UTOPIA2077-UFO/attendance/main/ufo.png" class="ufo-icon" onerror="this.style.display='none'">
-    <span class="title">威学考勤 Pro v13.1</span>
+    <span class="title">🛸 威学考勤 Pro v13.3</span>
 </div>
 
 <div class="tool-bar">
@@ -83,7 +75,7 @@
 <div class="summary-bar">
     <div class="summary-item">出勤 <b id="cntW">0</b>天</div>
     <div class="summary-item">休息 <b id="cntO">0</b>天</div>
-    <div class="summary-item">备注 <b id="cntN">0</b>天</div>
+    <div class="summary-item">备注 <b id="cntN">0</b>次</div>
 </div>
 <button class="export-btn" onclick="exportReport()">📊 点击生成本月考勤简报</button>
 
@@ -110,7 +102,11 @@
     document.getElementById('inD').oninput = () => document.getElementById('inH').value = (document.getElementById('inD').value * 7.75).toFixed(2);
     document.getElementById('inH').oninput = () => document.getElementById('inD').value = (document.getElementById('inH').value / 7.75).toFixed(2);
     
-    function saveI() { cfg.baseH = parseFloat(document.getElementById('inH').value) || 0; localStorage.setItem('wx_cfg_'+V, JSON.stringify(cfg)); render(); alert('历史数据已应用！'); }
+    function saveI() { 
+        cfg.baseH = parseFloat(document.getElementById('inH').value) || 0; 
+        localStorage.setItem('wx_cfg_'+V, JSON.stringify(cfg)); 
+        render(); alert('数据已就绪！'); 
+    }
 
     function render() {
         document.getElementById('mLab').innerText = `${cY}-${String(cM+1).padStart(2,'0')}`;
@@ -140,7 +136,7 @@
             if(data.s === 'OFF') cls += ' is-off';
             if(data.a > 0) { cls += ' has-a'; txt = '+' + data.a; }
             if(data.o > 0) { cls += ' has-o'; txt = '-' + data.o; }
-            if(data.r && data.r.trim() !== '') { cls += ' has-note'; sub = data.s; txt = data.r.substring(0, 2); }
+            if(data.r && data.r.trim() !== '') { cls += ' has-note'; sub = (data.s === 'OFF' ? '休' : data.s); txt = data.r.substring(0, 2); }
 
             g.innerHTML += `<div class="${cls}" onclick="openM('${k}')"><span class="day-sub">${sub}</span><span class="day-n">${d}</span><span class="day-s">${txt}</span></div>`;
         }
@@ -149,7 +145,7 @@
     }
 
     function exportReport() {
-        const report = `【威学考勤战报】\n📅 统计：${document.getElementById('mLab').innerText}\n🏃 出勤：${document.getElementById('cntW').innerText}天\n😴 休息：${document.getElementById('cntO').innerText}天\n📝 备注：${document.getElementById('cntN').innerText}次\n------------------\n🚀 结余：${document.getElementById('vT').innerText}h\n✨ 准博士出品`;
+        const report = `【威学考勤战报】\n📅 统计时间：${document.getElementById('mLab').innerText}\n🏃 出勤：${document.getElementById('cntW').innerText}天\n😴 休息：${document.getElementById('cntO').innerText}天\n📝 备注：${document.getElementById('cntN').innerText}次\n------------------\n🚀 累计结余：${document.getElementById('vT').innerText}h\n✨ 外星人出品`;
         if (navigator.share) { navigator.share({ title: '考勤简报', text: report }); } else { alert(report); }
     }
 
@@ -160,7 +156,7 @@
     }
     function doS() {
         let o = parseFloat(document.getElementById('mO').value) || 0;
-        db[curK] = {s:document.getElementById('mS').value, a:parseFloat(document.getElementById('mA').value)||0, o:(o>0 && o<3.25 ? 0 : o), r:document.getElementById('mR').value};
+        db[curK] = {s: document.getElementById('mS').value, a: parseFloat(document.getElementById('mA').value)||0, o: (o > 0 && o < 3.25 ? 0 : o), r: document.getElementById('mR').value};
         localStorage.setItem('wx_db_'+V, JSON.stringify(db));
         closeM(); render();
     }
