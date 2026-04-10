@@ -1,20 +1,30 @@
-const CACHE_NAME = 'wx-pro-v13.4';
+const CACHE_NAME = 'wx-pro-v16.6';
 const ASSETS = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './icon.png'
 ];
 
-// 安装时缓存文件
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
 });
 
-// 拦截请求，优先从本地缓存读取
 self.addEventListener('fetch', (e) => {
   e.respondWith(
     caches.match(e.request).then(res => res || fetch(e.request))
+  );
+});
+
+// 清理旧缓存
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then(keys => Promise.all(
+      keys.map(key => {
+        if (key !== CACHE_NAME) return caches.delete(key);
+      })
+    ))
   );
 });
