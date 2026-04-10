@@ -6,53 +6,46 @@
     <title>威学考勤 Pro v13.4</title>
 
     <link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="威学考勤 Pro">
-<link rel="apple-touch-icon" href="https://img.icons8.com/fluency/512/ufo.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="威学考勤 Pro">
+    <link rel="apple-touch-icon" href="icon.png">
 
-<script>
-  // 注册 Service Worker 脚本
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js')
-        .then(reg => console.log('PWA 已就绪'))
-        .catch(err => console.log('PWA 注册失败', err));
-    });
-  }
-</script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('PWA Ready'))
+            .catch(err => console.log('PWA Error', err));
+        });
+      }
+    </script>
+
     <style>
         :root { --red: #D32F2F; --black: #1A1A1A; --gray: #f8f9fa; --gold: #b58900; --purple: #7B1FA2; --export: #6200EE; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, sans-serif; background: var(--gray); margin: 0; padding-bottom: 50px; }
-        
         .header { background: var(--black); color: white; padding: 25px 20px; text-align: center; border-radius: 0 0 20px 20px; }
         .title { border-bottom: 2px solid var(--red); font-size: 20px; font-weight: bold; padding-bottom: 5px; }
-        
         .tool-bar { background: #fff; margin: 10px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .conv-row { display: flex; align-items: center; gap: 8px; }
         .conv-row input { flex: 1; width: 50px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; text-align: center; }
         .apply-btn { width: 100%; background: var(--black); color: white; border: none; padding: 10px; border-radius: 8px; margin-top: 10px; font-weight: bold; }
-        
         .dash { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 10px; margin-top: 10px; }
         .card { background: white; padding: 12px; border-radius: 12px; text-align: center; }
         .card.red { background: var(--red); color: white; border: 2px solid #b71c1c; }
         .val { font-size: 18px; font-weight: 900; display: block; }
         .sub-val { font-size: 11px; opacity: 0.9; font-weight: bold; margin-top: 2px; display: block; }
-        
         .summary-bar { background: #eee; margin: 15px 10px 5px; padding: 10px; border-radius: 10px; display: flex; justify-content: space-around; font-size: 11px; color: #666; }
         .summary-item b { color: var(--black); font-size: 14px; margin-right: 2px; }
         .export-btn { width: calc(100% - 20px); background: var(--export); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; margin: 5px 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-
         .nav { display: flex; justify-content: space-between; padding: 10px 20px; align-items: center; }
         .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; padding: 0 10px; }
         .weekday { text-align: center; font-size: 12px; color: #999; }
-        
         .day { background: white; aspect-ratio: 0.85; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #eee; position: relative; }
         .day-n { font-size: 13px; font-weight: bold; color: #333; }
         .day-s { font-size: 11px; font-weight: 800; color: #aaa; margin-top: 2px; text-align: center; line-height: 1.1; }
         .day-sub { position: absolute; left: 4px; top: 4px; font-size: 9px; color: #bbb; font-weight: bold; }
-        
         .day.is-off { background: #e0e0e0; } 
         .day.has-a { background: #fffcf0; border: 1px solid #f9eeb0; }
         .day.has-a .day-s { color: var(--gold); }
@@ -60,8 +53,6 @@
         .day.has-o .day-s { color: var(--red); }
         .day.has-note { background: #f3e5f5; border: 1px solid #ce93d8; } 
         .day.has-note .day-s { color: var(--purple) !important; font-weight: 900; }
-        .day.has-note .day-sub { color: var(--purple); opacity: 0.6; }
-
         #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 320px; background: white; padding: 20px; border-radius: 20px; z-index: 101; }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; backdrop-filter: blur(3px); }
         .form-g { margin-bottom: 12px; }
@@ -71,36 +62,22 @@
 </head>
 <body>
 
-<div class="header">
-    <span class="title">🛸 威学考勤 Pro v13.4</span>
-</div>
+<div class="header"><span class="title">🛸 威学考勤 Pro v13.4</span></div>
 
 <div class="tool-bar">
-    <div class="conv-row">
-        <input type="number" id="inD" placeholder="天">
-        <span>天 =</span>
-        <input type="number" id="inH" placeholder="小时">
-        <span>小时</span>
-    </div>
+    <div class="conv-row"><input type="number" id="inD" placeholder="天"><span>天 =</span><input type="number" id="inH" placeholder="小时"></div>
     <button class="apply-btn" onclick="saveI()">应用为历史起算点</button>
 </div>
 
 <div class="dash">
-    <div class="card">
-        <span class="val" id="vP">0.00</span>
-        <span style="font-size:10px">上月结余(h)</span>
-    </div>
-    <div class="card red">
-        <span class="val" id="vT">0.00</span>
-        <span class="sub-val" id="vCount">可调 0 次</span>
-        <span style="font-size:10px">当前总剩余时长</span>
-    </div>
+    <div class="card"><span class="val" id="vP">0.00</span><span style="font-size:10px">上月结余(h)</span></div>
+    <div class="card red"><span class="val" id="vT">0.00</span><span class="sub-val" id="vCount">可调 0 次</span><span style="font-size:10px">当前总剩余时长</span></div>
 </div>
 
 <div class="summary-bar">
-    <div class="summary-item">出勤 <b id="cntW">0</b>天</div>
-    <div class="summary-item">休息 <b id="cntO">0</b>天</div>
-    <div class="summary-item">备注 <b id="cntN">0</b>次</div>
+    <div class="summary-item">出勤 <b id="cntW">0</b></div>
+    <div class="summary-item">休息 <b id="cntO">0</b></div>
+    <div class="summary-item">备注 <b id="cntN">0</b></div>
 </div>
 <button class="export-btn" onclick="exportReport()">📊 点击生成本月考勤简报</button>
 
@@ -113,7 +90,7 @@
     <div class="form-g"><label style="font-size:11px;color:#999">班次</label><select id="mS"><option value="F">F班</option><option value="A">A班</option><option value="C">C班</option><option value="OFF">休息 / OFF</option></select></div>
     <div class="form-g"><label style="font-size:11px;color:#999">加班 (+h)</label><input type="number" id="mA" step="0.1"></div>
     <div class="form-g"><label style="font-size:11px;color:#999">调休 (-h)</label><input type="number" id="mO" step="0.1"></div>
-    <div class="form-g"><label style="font-size:11px;color:#999">备注 (填“调班或迟到等”会显紫)</label><input type="text" id="mR" maxlength="10"></div>
+    <div class="form-g"><label style="font-size:11px;color:#999">备注</label><input type="text" id="mR" maxlength="10"></div>
     <button class="btn-save" onclick="doS()">保存</button>
 </div>
 
@@ -130,7 +107,7 @@
     function saveI() { 
         cfg.baseH = parseFloat(document.getElementById('inH').value) || 0; 
         localStorage.setItem('wx_cfg_'+V, JSON.stringify(cfg)); 
-        render(); alert('数据已就绪！'); 
+        render(); alert('同步成功！'); 
     }
 
     function render() {
@@ -138,19 +115,16 @@
         const g = document.getElementById('grid'); g.innerHTML = '';
         ['日','一','二','三','四','五','六'].forEach(w=>g.innerHTML+=`<div class="weekday">${w}</div>`);
 
-        let runningTotal = cfg.baseH;
-        let histTotal = cfg.baseH;
-        const sortedKeys = Object.keys(db).sort();
+        let runH = cfg.baseH; let hisH = cfg.baseH;
+        const keys = Object.keys(db).sort();
         
-        sortedKeys.forEach(k => {
+        keys.forEach(k => {
             const [y, m] = k.split('-').map(Number);
-            if(y < cY || (y === cY && m < cM + 1)) {
-                histTotal += (db[k].a - db[k].o);
-            }
+            if(y < cY || (y === cY && m < cM + 1)) hisH += (db[k].a - db[k].o);
         });
-        document.getElementById('vP').innerText = histTotal.toFixed(2);
+        document.getElementById('vP').innerText = hisH.toFixed(2);
 
-        runningTotal = histTotal;
+        runH = hisH;
         const days = new Date(cY, cM+1, 0).getDate();
         const first = new Date(cY, cM, 1).getDay();
         let nW = 0, nOff = 0, nN = 0;
@@ -160,7 +134,7 @@
         for(let d=1; d<=days; d++) {
             const k = `${cY}-${String(cM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const data = db[k] || {s:'F', a:0, o:0, r:''};
-            runningTotal += (data.a - data.o);
+            runH += (data.a - data.o);
             if(data.s === 'OFF') nOff++; else nW++;
             if(data.r && data.r.trim() !== '') nN++;
 
@@ -172,28 +146,35 @@
             g.innerHTML += `<div class="${cls}" onclick="openM('${k}')"><span class="day-sub">${sub}</span><span class="day-n">${d}</span><span class="day-s">${txt}</span></div>`;
         }
         
-        sortedKeys.forEach(k => {
+        keys.forEach(k => {
             const [y, m] = k.split('-').map(Number);
-            if(y > cY || (y === cY && m > cM + 1)) { runningTotal += (db[k].a - db[k].o); }
+            if(y > cY || (y === cY && m > cM + 1)) runH += (db[k].a - db[k].o);
         });
 
-        // 更新总时长
-        document.getElementById('vT').innerText = runningTotal.toFixed(2);
-        
-        // 核心新增：换算可调次数（向下取整，最低3.25一次）
-        const canOffCount = Math.floor(runningTotal / 3.25);
-        document.getElementById('vCount').innerText = `可调 ${canOffCount >= 0 ? canOffCount : 0} 次`;
-
+        document.getElementById('vT').innerText = runH.toFixed(2);
+        const canOff = Math.floor(runH / 3.25);
+        document.getElementById('vCount').innerText = `可调 ${canOff >= 0 ? canOff : 0} 次`;
         document.getElementById('cntW').innerText = nW; 
         document.getElementById('cntO').innerText = nOff; 
         document.getElementById('cntN').innerText = nN;
     }
 
+    function doS() {
+        db[curK] = {
+            s: document.getElementById('mS').value, 
+            a: parseFloat(document.getElementById('mA').value) || 0, 
+            o: parseFloat(document.getElementById('mO').value) || 0, 
+            r: document.getElementById('mR').value
+        };
+        localStorage.setItem('wx_db_'+V, JSON.stringify(db));
+        closeM(); render(); 
+    }
+
     function exportReport() {
-        const totalH = document.getElementById('vT').innerText;
-        const countOff = Math.floor(parseFloat(totalH) / 3.25);
-        const report = `【威学考勤战报】\n📅 统计时间：${document.getElementById('mLab').innerText}\n🏃 出勤：${document.getElementById('cntW').innerText}天\n😴 休息：${document.getElementById('cntO').innerText}天\n📝 备注：${document.getElementById('cntN').innerText}次\n------------------\n🚀 累计结余：${totalH}h\n🎫 剩余调休：${countOff}次\n✨ 外星人出品`;
-        if (navigator.share) { navigator.share({ title: '考勤简报', text: report }); } else { alert(report); }
+        const h = document.getElementById('vT').innerText;
+        const c = Math.floor(parseFloat(h) / 3.25);
+        const r = `【威学考勤简报】\n📅 时间：${document.getElementById('mLab').innerText}\n🚀 结余：${h}h\n🎫 调休：${c}次\n✨ 外星人出品`;
+        alert(r);
     }
 
     function openM(k) {
@@ -203,21 +184,7 @@
         document.getElementById('mA').value = d.a || ''; 
         document.getElementById('mO').value = d.o || ''; 
         document.getElementById('mR').value = d.r || '';
-        document.getElementById('modal').style.display = 'block'; 
-        document.getElementById('ovl').style.display = 'block';
-    }
-
-    function doS() {
-        // 保存时依然保留之前的逻辑保护，但会触发重绘来重新换算次数
-        db[curK] = {
-            s: document.getElementById('mS').value, 
-            a: parseFloat(document.getElementById('mA').value) || 0, 
-            o: parseFloat(document.getElementById('mO').value) || 0, 
-            r: document.getElementById('mR').value
-        };
-        localStorage.setItem('wx_db_'+V, JSON.stringify(db));
-        closeM(); 
-        render(); 
+        document.getElementById('modal').style.display='block'; document.getElementById('ovl').style.display='block';
     }
 
     function closeM() { document.getElementById('modal').style.display='none'; document.getElementById('ovl').style.display='none'; }
