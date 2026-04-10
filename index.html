@@ -4,6 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>威学考勤 Pro v13.4</title>
+
+    <link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="威学考勤 Pro">
+<link rel="apple-touch-icon" href="https://img.icons8.com/fluency/512/ufo.png">
+
+<script>
+  // 注册 Service Worker 脚本
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('PWA 已就绪'))
+        .catch(err => console.log('PWA 注册失败', err));
+    });
+  }
+</script>
     <style>
         :root { --red: #D32F2F; --black: #1A1A1A; --gray: #f8f9fa; --gold: #b58900; --purple: #7B1FA2; --export: #6200EE; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
