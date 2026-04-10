@@ -8,12 +8,12 @@
   "theme_color": "#D32F2F",
   "icons": [
     {
-      "src": "https://img.icons8.com/fluency/144/ufo.png",
+      "src": "icon.png",
       "sizes": "144x144",
       "type": "image/png"
     },
     {
-      "src": "https://img.icons8.com/fluency/512/ufo.png",
+      "src": "icon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
