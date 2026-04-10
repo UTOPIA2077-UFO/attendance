@@ -1,0 +1,21 @@
+{
+  "name": "威学考勤 Pro",
+  "short_name": "威学Pro",
+  "description": "外星人专属考勤管理工具",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#1A1A1A",
+  "theme_color": "#D32F2F",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/fluency/144/ufo.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "https://img.icons8.com/fluency/512/ufo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
