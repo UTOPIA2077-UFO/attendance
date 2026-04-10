@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>威学考勤 Pro v9</title>
+    <title>威学考勤 Pro v10</title>
     <style>
-        :root { --red: #D32F2F; --black: #1A1A1A; --gray: #f8f9fa; }
+        :root { --red: #D32F2F; --black: #1A1A1A; --gray: #f8f9fa; --gold: #b58900; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, sans-serif; background: var(--gray); margin: 0; padding-bottom: 50px; }
         .header { background: var(--black); color: white; padding: 20px; text-align: center; border-radius: 0 0 20px 20px; }
         .title { border-bottom: 2px solid var(--red); font-size: 20px; font-weight: bold; }
+        
         .tool-bar { background: #fff; margin: 10px; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .conv-row { display: flex; align-items: center; gap: 8px; }
         .conv-row input { flex: 1; width: 50px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; text-align: center; }
@@ -20,23 +21,29 @@
         .card.red { background: var(--red); color: white; }
         .val { font-size: 18px; font-weight: 900; display: block; }
         
-        /* 汇总统计区 (v9新增) */
         .summary-bar { background: #eee; margin: 15px 10px 5px; padding: 10px; border-radius: 10px; display: flex; justify-content: space-around; font-size: 11px; color: #666; }
         .summary-item b { color: var(--black); font-size: 14px; margin-right: 2px; }
 
         .nav { display: flex; justify-content: space-between; padding: 10px 20px; align-items: center; }
         .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; padding: 0 10px; }
         .weekday { text-align: center; font-size: 12px; color: #999; }
-        .day { background: white; aspect-ratio: 0.85; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #eee; position: relative; }
-        .day-n { font-size: 13px; font-weight: bold; }
-        .day-s { font-size: 11px; font-weight: 800; color: #bbb; margin-top: 2px; }
         
-        .day.is-off { background: #ececec; }
-        .day.has-a { background: #fffcf0; border-color: #f9eeb0; }
-        .day.has-a .day-s { color: #b58900; }
-        .day.has-o { border: 1.5px solid var(--red); background: #fff8f8; }
+        /* 核心逻辑优化 */
+        .day { background: white; aspect-ratio: 0.85; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #eee; position: relative; }
+        .day-n { font-size: 13px; font-weight: bold; color: #333; }
+        .day-s { font-size: 11px; font-weight: 800; color: #aaa; margin-top: 2px; }
+        
+        /* 状态显示 */
+        .day.is-off { background: #e0e0e0; } /* 只有休息显示灰色 */
+        .day.is-off .day-s { color: #777; }
+        
+        .day.has-a { background: #fffcf0; border: 1px solid #f9eeb0; } /* 加班：淡黄底 */
+        .day.has-a .day-s { color: var(--gold); }
+        
+        .day.has-o { background: #fff8f8; border: 1.5px solid var(--red); } /* 调休：红框 */
         .day.has-o .day-s { color: var(--red); }
-        .day.has-note { border-bottom: 3px solid var(--red); }
+
+        .day.has-note { border-bottom: 3px solid var(--red); } /* 备注：底红线 */
         .day.has-note .day-s { color: var(--red) !important; font-weight: 900; }
 
         #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 320px; background: white; padding: 20px; border-radius: 20px; z-index: 101; }
@@ -48,13 +55,13 @@
 </head>
 <body>
 
-<div class="header"><span class="title">威学考勤 Pro v9</span></div>
+<div class="header"><span class="title">威学考勤 Pro v10</span></div>
 
 <div class="tool-bar">
     <div class="conv-row">
-        <input type="number" id="inD" placeholder="天" oninput="sD()">
+        <input type="number" id="inD" placeholder="天">
         <span>天 =</span>
-        <input type="number" id="inH" placeholder="小时" oninput="sH()">
+        <input type="number" id="inH" placeholder="小时">
         <span>小时</span>
     </div>
     <button class="apply-btn" onclick="saveI()">应用为历史起算点</button>
@@ -66,9 +73,9 @@
 </div>
 
 <div class="summary-bar">
-    <div class="summary-item">出勤 <b id="cntWork">0</b>天</div>
-    <div class="summary-item">休息 <b id="cntOff">0</b>天</div>
-    <div class="summary-item">备注 <b id="cntNote">0</b>天</div>
+    <div class="summary-item">出勤 <b id="cntW">0</b>天</div>
+    <div class="summary-item">休息 <b id="cntO">0</b>天</div>
+    <div class="summary-item">备注 <b id="cntN">0</b>天</div>
 </div>
 
 <div class="nav"><button onclick="chM(-1)">◀</button><b id="mLab">2026-04</b><button onclick="chM(1)">▶</button></div>
@@ -77,7 +84,7 @@
 <div class="overlay" id="ovl" onclick="closeM()"></div>
 <div id="modal">
     <div id="mDt" style="font-weight:bold; color:var(--red); margin-bottom:15px;"></div>
-    <div class="form-g"><label style="font-size:11px;color:#999">班次</label><select id="mS"><option value="F">F班</option><option value="A">A班</option><option value="C">C班</option><option value="OFF">休息</option></select></div>
+    <div class="form-g"><label style="font-size:11px;color:#999">班次</label><select id="mS"><option value="F">F班</option><option value="A">A班</option><option value="C">C班</option><option value="OFF">休息 / OFF</option></select></div>
     <div class="form-g"><label style="font-size:11px;color:#999">加班 (+h)</label><input type="number" id="mA" step="0.1"></div>
     <div class="form-g"><label style="font-size:11px;color:#999">调休 (-h)</label><input type="number" id="mO" step="0.1"></div>
     <div class="form-g"><label style="font-size:11px;color:#999">备注 (显示前2字)</label><input type="text" id="mR" maxlength="10"></div>
@@ -85,15 +92,15 @@
 </div>
 
 <script>
-    const V = 'v9';
-    // 自动兼容 v8 的旧数据
-    let db = JSON.parse(localStorage.getItem('wx_db_'+V)) || JSON.parse(localStorage.getItem('wx_db_v8')) || {};
-    let cfg = JSON.parse(localStorage.getItem('wx_cfg_'+V)) || JSON.parse(localStorage.getItem('wx_cfg_v8')) || { baseH: 0 };
+    const V = 'v10';
+    let db = JSON.parse(localStorage.getItem('wx_db_'+V)) || JSON.parse(localStorage.getItem('wx_db_v9')) || {};
+    let cfg = JSON.parse(localStorage.getItem('wx_cfg_'+V)) || JSON.parse(localStorage.getItem('wx_cfg_v9')) || { baseH: 0 };
     let cY = new Date().getFullYear(), cM = new Date().getMonth();
     let curK = '';
 
-    function sD() { document.getElementById('inH').value = (document.getElementById('inD').value * 7.75).toFixed(2); }
-    function sH() { document.getElementById('inD').value = (document.getElementById('inH').value / 7.75).toFixed(2); }
+    document.getElementById('inD').oninput = () => document.getElementById('inH').value = (document.getElementById('inD').value * 7.75).toFixed(2);
+    document.getElementById('inH').oninput = () => document.getElementById('inD').value = (document.getElementById('inH').value / 7.75).toFixed(2);
+    
     function saveI() { cfg.baseH = parseFloat(document.getElementById('inH').value) || 0; localStorage.setItem('wx_cfg_'+V, JSON.stringify(cfg)); render(); alert('历史数据已应用！'); }
 
     function render() {
@@ -108,9 +115,7 @@
         });
         document.getElementById('vP').innerText = hist.toFixed(2);
 
-        let mA = 0, mO = 0;
-        let nWork = 0, nOff = 0, nNote = 0; // 统计变量
-
+        let mA = 0, mO = 0, nW = 0, nOff = 0, nN = 0;
         const first = new Date(cY, cM, 1).getDay();
         const days = new Date(cY, cM+1, 0).getDate();
         for(let i=0; i<first; i++) g.innerHTML += '<div></div>';
@@ -120,11 +125,12 @@
             const data = db[k] || {s:'F', a:0, o:0, r:''};
             mA += data.a; mO += data.o;
             
-            // 统计逻辑
-            if(data.s === 'OFF') nOff++; else nWork++;
-            if(data.r && data.r.trim() !== '') nNote++;
+            if(data.s === 'OFF') nOff++; else nW++;
+            if(data.r && data.r.trim() !== '') nN++;
 
             let cls = 'day', txt = data.s === 'OFF' ? '休' : data.s;
+            
+            // 样式判断：只有实际有变动才显色
             if(data.s === 'OFF') cls += ' is-off';
             if(data.a > 0) { cls += ' has-a'; txt = '+' + data.a; }
             if(data.o > 0) { cls += ' has-o'; txt = '-' + data.o; }
@@ -133,11 +139,9 @@
             g.innerHTML += `<div class="${cls}" onclick="openM('${k}')"><span class="day-n">${d}</span><span class="day-s">${txt}</span></div>`;
         }
         document.getElementById('vT').innerText = (hist + mA - mO).toFixed(2);
-        
-        // 更新页面汇总数据
-        document.getElementById('cntWork').innerText = nWork;
-        document.getElementById('cntOff').innerText = nOff;
-        document.getElementById('cntNote').innerText = nNote;
+        document.getElementById('cntW').innerText = nW;
+        document.getElementById('cntO').innerText = nOff;
+        document.getElementById('cntN').innerText = nN;
     }
 
     function openM(k) {
